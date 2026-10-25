@@ -1,0 +1,127 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg:      #020206;
+  --surface: #0d0d14;
+  --border:  rgba(255,255,255,0.07);
+  --purple:  #8b5cf6;
+  --indigo:  #6366f1;
+  --pink:    #ec4899;
+  --amber:   #f59e0b;
+  --cyan:    #06b6d4;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  background: var(--bg);
+  color: #fff;
+  font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+}
+
+/* ── Scrollbar ────────────────────────────────────────────────────────────── */
+::-webkit-scrollbar        { width: 6px; height: 6px; }
+::-webkit-scrollbar-track  { background: transparent; }
+::-webkit-scrollbar-thumb  { background: #333; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #555; }
+
+/* ── Selection ───────────────────────────────────────────────────────────── */
+::selection { background: rgba(139,92,246,.35); color: #fff; }
+
+/* ── Progress bar animated gradient ─────────────────────────────────────── */
+@keyframes shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position:  400px 0; }
+}
+.progress-bar {
+  background: linear-gradient(90deg,
+    #6366f1 0%,
+    #8b5cf6 30%,
+    #ec4899 60%,
+    #8b5cf6 80%,
+    #6366f1 100%);
+  background-size: 400px 100%;
+  animation: shimmer 2s infinite linear;
+}
+
+/* ── Ambient glow orbs ───────────────────────────────────────────────────── */
+.orb-purple {
+  position: fixed; pointer-events: none; border-radius: 50%;
+  width: 900px; height: 500px;
+  top: -200px; left: 50%; transform: translateX(-50%);
+  background: radial-gradient(ellipse, rgba(139,92,246,.12) 0%, transparent 70%);
+  filter: blur(60px);
+}
+.orb-indigo {
+  position: fixed; pointer-events: none; border-radius: 50%;
+  width: 600px; height: 500px;
+  top: 40%; right: -150px;
+  background: radial-gradient(ellipse, rgba(99,102,241,.09) 0%, transparent 70%);
+  filter: blur(60px);
+}
+
+/* ── Glass card ──────────────────────────────────────────────────────────── */
+.glass {
+  background: rgba(13,13,20,.80);
+  backdrop-filter: blur(18px) saturate(1.4);
+  -webkit-backdrop-filter: blur(18px) saturate(1.4);
+  border: 1px solid rgba(255,255,255,.07);
+  border-radius: 20px;
+}
+
+/* ── Glow ring on hover ──────────────────────────────────────────────────── */
+.glow-hover {
+  transition: box-shadow .25s ease, border-color .25s ease, transform .25s ease;
+}
+.glow-hover:hover {
+  box-shadow: 0 0 0 1px rgba(139,92,246,.4), 0 8px 40px rgba(139,92,246,.12);
+  border-color: rgba(139,92,246,.35) !important;
+  transform: translateY(-2px);
+}
+
+/* ── Gradient text ───────────────────────────────────────────────────────── */
+.gradient-text {
+  background: linear-gradient(135deg, #a78bfa 0%, #ec4899 50%, #f59e0b 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── Input focus ring ────────────────────────────────────────────────────── */
+.input-ring:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(139,92,246,.5);
+}
+
+/* ── Pill badge ──────────────────────────────────────────────────────────── */
+.badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 700;
+  letter-spacing: .3px;
+}
+.badge-amber { background: rgba(245,158,11,.12); border: 1px solid rgba(245,158,11,.25); color: #fbbf24; }
+.badge-green { background: rgba(16,185,129,.12); border: 1px solid rgba(16,185,129,.25); color: #34d399; }
+.badge-red   { background: rgba(239,68, 68,.12); border: 1px solid rgba(239,68, 68,.25); color: #f87171; }
+.badge-blue  { background: rgba(99,102,241,.12); border: 1px solid rgba(99,102,241,.25); color: #818cf8; }
+.badge-purple{ background: rgba(139,92,246,.12); border: 1px solid rgba(139,92,246,.25); color: #a78bfa; }
+
+/* ── Smooth fade-in ──────────────────────────────────────────────────────── */
+@keyframes fadeUp {
+  from { opacity:0; transform:translateY(16px); }
+  to   { opacity:1; transform:translateY(0);    }
+}
+.fade-up { animation: fadeUp .4s ease both; }
+
+/* ── Range input styling ─────────────────────────────────────────────────── */
+input[type=range] { -webkit-appearance:none; appearance:none; height:4px; border-radius:2px; background:#222; cursor:pointer; }
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance:none; appearance:none;
+  width:16px; height:16px; border-radius:50%;
+  background: linear-gradient(135deg,#8b5cf6,#6366f1);
+  cursor:pointer; box-shadow:0 0 8px rgba(139,92,246,.5);
+}
