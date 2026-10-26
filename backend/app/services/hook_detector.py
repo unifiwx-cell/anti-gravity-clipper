@@ -104,7 +104,7 @@ class HookDetector:
         if transcript_data.get("segments"):
             for seg in transcript_data["segments"]:
                 lines.append(
-                    f"[{seg['start']:.2f}s → {seg['end']:.2f}s]: {seg['text'].strip()}"
+                    f"[{seg['start']:.2f}s -> {seg['end']:.2f}s]: {seg['text'].strip()}"
                 )
         elif transcript_data.get("words"):
             chunk, c_start = [], 0.0
@@ -114,12 +114,12 @@ class HookDetector:
                 chunk.append(w["word"])
                 if w["end"] - c_start >= 10:
                     lines.append(
-                        f"[{c_start:.2f}s → {w['end']:.2f}s]: {' '.join(chunk)}"
+                        f"[{c_start:.2f}s -> {w['end']:.2f}s]: {' '.join(chunk)}"
                     )
                     chunk = []
             if chunk:
                 last = transcript_data["words"][-1]["end"]
-                lines.append(f"[{c_start:.2f}s → {last:.2f}s]: {' '.join(chunk)}")
+                lines.append(f"[{c_start:.2f}s -> {last:.2f}s]: {' '.join(chunk)}")
         return "\n".join(lines)
 
     # ── API callers ───────────────────────────────────────────────────────────

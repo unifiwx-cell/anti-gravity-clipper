@@ -4,7 +4,7 @@ Speaker-centred 9:16 vertical crop with smooth linear camera pan.
 
 Key design choices
 ──────────────────
-1.  YuNet neural face detector → Haar cascade fallback → frame centre fallback.
+1.  YuNet neural face detector -> Haar cascade fallback -> frame centre fallback.
 2.  Positions are sampled every 1.5 s across the clip, then smoothed with EMA.
 3.  If the speaker shifts > 40 px, FFmpeg executes a single linear lerp pan
     from the first smoothed position to the last.  The lerp expression is
@@ -190,7 +190,7 @@ class VideoProcessor:
 
         for rel_t, raw_cx in raw_centers:
             smooth_cx = alpha * raw_cx + (1.0 - alpha) * smooth_cx
-            # Convert face centre → top-left crop X, clamped to valid range
+            # Convert face centre -> top-left crop X, clamped to valid range
             crop_x = int(smooth_cx - crop_w / 2.0)
             crop_x = max(0, min(crop_x, max_x))
             smoothed.append((rel_t, crop_x))
@@ -201,7 +201,7 @@ class VideoProcessor:
         ffmpeg = self._get_ffmpeg_path()
 
         if x_range > 40 and len(smoothed) > 1:
-            # Single linear lerp from first detected position → last detected position.
+            # Single linear lerp from first detected position -> last detected position.
             # This pan spans the full clip duration and is 100% compatible with FFmpeg 9.x.
             x0 = smoothed[0][1]
             x1 = smoothed[-1][1]
@@ -216,7 +216,7 @@ class VideoProcessor:
             x_expr    = f"min({max_x}\\,max(0\\,{lerp_expr}))"
             vf        = f"crop={crop_w}:{crop_h}:x='{x_expr}':y=0"
 
-            print(f"[VideoProcessor] clip={clip_id} | pan {x0}→{x1} px over {D}s")
+            print(f"[VideoProcessor] clip={clip_id} | pan {x0}->{x1} px over {D}s")
         else:
             # Speaker stationary — use median position for rock-solid framing
             stable_x = int(np.median(xs))

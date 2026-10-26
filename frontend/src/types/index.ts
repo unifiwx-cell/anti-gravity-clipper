@@ -48,7 +48,20 @@ export interface SessionStatus {
   clips:            Clip[];
   video_info:       VideoInfo;
   video_analysis?:  VideoAnalysis;
+  created_at?:      string;
   error?:           string;
+}
+
+export interface ProjectSummary {
+  id:          string;
+  url:         string;
+  title:       string;
+  thumbnail:   string;
+  duration:    number;
+  status:      "queued" | "processing" | "completed" | "failed";
+  progress:    number;
+  clips_count: number;
+  created_at:  string;
 }
 
 export type CaptionStyle = "hormozi" | "glowing" | "typewriter";

@@ -333,14 +333,25 @@ export const CaptionEditor: React.FC<CaptionEditorProps> = ({
               )}
             </button>
 
-            <a
-              href={`${apiBaseUrl}/api/captions/${sessionId}/clip/${clip.clip_id}`}
-              download
-              className="w-full py-2.5 border border-emerald-700/40 bg-emerald-950/20 hover:bg-emerald-900/30 text-emerald-400 font-semibold rounded-xl flex items-center justify-center gap-2 text-sm transition"
-            >
-              <FileText className="w-4 h-4" />
-              Download SRT Captions
-            </a>
+            <div className="grid grid-cols-2 gap-2">
+              <a
+                href={`${apiBaseUrl}/api/download/clip/${sessionId}/${clip.clip_id}`}
+                download={`clip_${clip.clip_id}.mp4`}
+                className="py-2.5 border border-purple-700/40 bg-purple-950/20 hover:bg-purple-900/30 text-purple-300 font-semibold rounded-xl flex items-center justify-center gap-1.5 text-xs transition"
+              >
+                <Download className="w-3.5 h-3.5" />
+                Raw 9:16 MP4
+              </a>
+
+              <a
+                href={`${apiBaseUrl}/api/captions/${sessionId}/clip/${clip.clip_id}`}
+                download={`clip_${clip.clip_id}.srt`}
+                className="py-2.5 border border-emerald-700/40 bg-emerald-950/20 hover:bg-emerald-900/30 text-emerald-400 font-semibold rounded-xl flex items-center justify-center gap-1.5 text-xs transition"
+              >
+                <FileText className="w-3.5 h-3.5" />
+                SRT Captions
+              </a>
+            </div>
 
             {downloadUrl && (
               <div className="p-3 bg-emerald-950/30 border border-emerald-700/30 rounded-xl flex items-center justify-between text-xs text-emerald-400">

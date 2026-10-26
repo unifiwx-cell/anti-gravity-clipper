@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Play, Flame, Clock, TrendingUp, TrendingDown, Minus, FileText } from "lucide-react";
+import { Play, Flame, Clock, TrendingUp, TrendingDown, Minus, FileText, Download } from "lucide-react";
 import { Clip } from "../types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -37,7 +37,22 @@ export const ClipCard: React.FC<ClipCardProps> = ({
 
   const handleSrt = (e: React.MouseEvent) => {
     e.stopPropagation();
-    window.open(`${API_BASE}/api/captions/${sessionId}/clip/${clip.clip_id}`, "_blank");
+    const link = document.createElement("a");
+    link.href = `${API_BASE}/api/captions/${sessionId}/clip/${clip.clip_id}`;
+    link.download = `clip_${clip.clip_id}.srt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleDownloadMp4 = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const link = document.createElement("a");
+    link.href = `${API_BASE}/api/download/clip/${sessionId}/${clip.clip_id}`;
+    link.download = `clip_${clip.clip_id}.mp4`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   return (
@@ -113,7 +128,7 @@ export const ClipCard: React.FC<ClipCardProps> = ({
       </div>
 
       {/* Footer */}
-      <div className="px-5 py-3 bg-black/30 border-t border-white/5 flex items-center justify-between">
+      <div className="px-5 py-3 bg-black/40 border-t border-white/5 flex items-center justify-between gap-2 flex-wrap">
         <div className="flex items-center gap-1.5 text-neutral-500 text-xs font-mono">
           <Clock className="w-3 h-3" />
           <span>{fmt(clip.start_time)} – {fmt(clip.end_time)}</span>
@@ -121,22 +136,36 @@ export const ClipCard: React.FC<ClipCardProps> = ({
           <span>{Math.round(clip.duration)}s</span>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
+          {/* Direct MP4 download */}
+          <button
+            type="button"
+            onClick={handleDownloadMp4}
+            title="Download Vertical MP4 (9:16)"
+            className="px-2 py-1 rounded bg-neutral-800/80 hover:bg-purple-600/30 text-neutral-300 hover:text-white transition flex items-center gap-1 text-xs font-medium border border-white/5"
+          >
+            <Download className="w-3 h-3 text-purple-400" />
+            <span>MP4</span>
+          </button>
+
+          {/* SRT download */}
           <button
             type="button"
             onClick={handleSrt}
             title="Download SRT captions"
-            className="text-neutral-600 hover:text-emerald-400 transition flex items-center gap-1 text-xs"
+            className="px-2 py-1 rounded bg-neutral-800/80 hover:bg-emerald-600/30 text-neutral-300 hover:text-emerald-300 transition flex items-center gap-1 text-xs font-medium border border-white/5"
           >
-            <FileText className="w-3.5 h-3.5" />
+            <FileText className="w-3 h-3 text-emerald-400" />
             <span>SRT</span>
           </button>
+
+          {/* Open editor */}
           <button
             type="button"
-            className="flex items-center gap-1.5 text-purple-400 hover:text-purple-300 transition text-xs font-semibold"
+            className="flex items-center gap-1 text-purple-400 hover:text-purple-300 transition text-xs font-semibold pl-1"
           >
             <Play className="w-3 h-3 fill-current" />
-            <span>Edit &amp; Render</span>
+            <span>Edit</span>
           </button>
         </div>
       </div>

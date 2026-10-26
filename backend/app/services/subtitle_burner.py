@@ -4,7 +4,7 @@ subtitle_burner.py  —  Anti-Gravity Clipper
 Generates ASS subtitle files using proper karaoke \\kf timing so that:
 
   • The 4-word phrase line stays COMPLETELY FIXED on screen (no flicker)
-  • The highlight sweeps LEFT → RIGHT word-by-word following the speech
+  • The highlight sweeps LEFT -> RIGHT word-by-word following the speech
   • Words not yet spoken appear in white (SecondaryColour / pre-fill state)
   • Words being / already spoken appear in the accent colour (PrimaryColour / post-fill state)
 
@@ -27,7 +27,7 @@ class SubtitleBurner:
     # ── Time formatting ───────────────────────────────────────────────────────
 
     def _ass_ts(self, seconds: float) -> str:
-        """Float seconds → ASS timestamp H:MM:SS.cs"""
+        """Float seconds -> ASS timestamp H:MM:SS.cs"""
         seconds = max(0.0, seconds)
         h  = int(seconds // 3600)
         m  = int((seconds % 3600) // 60)
@@ -36,7 +36,7 @@ class SubtitleBurner:
         return f"{h}:{m:02d}:{s:02d}.{cs:02d}"
 
     def _srt_ts(self, seconds: float) -> str:
-        """Float seconds → SRT timestamp HH:MM:SS,mmm"""
+        """Float seconds -> SRT timestamp HH:MM:SS,mmm"""
         seconds = max(0.0, seconds)
         h  = int(seconds // 3600)
         m  = int((seconds % 3600) // 60)
@@ -64,8 +64,8 @@ class SubtitleBurner:
 
         Each 4-word phrase = ONE Dialogue line.
         {\\kf<centiseconds>} before each word sweeps the fill colour
-        from SecondaryColour (white/base) → PrimaryColour (accent/highlight).
-        This means the text never re-renders between words → zero flicker.
+        from SecondaryColour (white/base) -> PrimaryColour (accent/highlight).
+        This means the text never re-renders between words -> zero flicker.
         """
         # ── Filter & rebase words ────────────────────────────────────────────
         clip_words: List[Dict] = []
@@ -90,8 +90,8 @@ class SubtitleBurner:
         # ── Style definitions ────────────────────────────────────────────────
         #
         # KEY: In ASS karaoke —
-        #   SecondaryColour = text colour BEFORE fill sweeps through  → WHITE / BASE
-        #   PrimaryColour   = text colour AFTER  fill sweeps through  → ACCENT / HIGHLIGHT
+        #   SecondaryColour = text colour BEFORE fill sweeps through  -> WHITE / BASE
+        #   PrimaryColour   = text colour AFTER  fill sweeps through  -> ACCENT / HIGHLIGHT
         #
         # &HAABBGGRR  (Alpha, Blue, Green, Red — reversed from normal RGB)
         #   &H00FFFFFF& = opaque white
