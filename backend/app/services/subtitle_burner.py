@@ -89,10 +89,32 @@ class SubtitleBurner:
 
         style_lower = style.lower().strip()
 
-        if style_lower == "beast":
+        # Multi-color creator rainbow palette (Yellow, Lime Green, Cyan, Coral Pink, Amber Orange)
+        # ASS hex colors are &HAABBGGRR& (Blue, Green, Red reversed)
+        multicolor_palette = [
+            "&H0000E5FF&",   # Vibrant Hormozi Yellow (#FFE500)
+            "&H0066FF00&",   # Electric Lime Green (#00FF66)
+            "&H00FFF000&",   # Luminous Cyan (#00F0FF)
+            "&H006633FF&",   # Coral Neon Pink (#FF3366)
+            "&H000099FF&",   # Punchy Amber Orange (#FF9900)
+        ]
+
+        if style_lower == "multicolor":
             font_name        = "Impact,Arial Black,sans-serif"
             secondary_color  = "&H00FFFFFF&"   # Unspoken: Pure White
-            primary_color    = custom_highlight_color or "&H0033FF00&"   # Spoken: Electric Lime
+            primary_color    = "&H0000E5FF&"
+            palette          = multicolor_palette
+            outline_color    = "&H00000000&"   # Deep Black
+            back_color       = "&H99000000&"
+            bold             = "-1"
+            outline_sz       = "7"
+            shadow_sz        = "4"
+            uppercase        = True
+        elif style_lower == "beast":
+            font_name        = "Impact,Arial Black,sans-serif"
+            secondary_color  = "&H00FFFFFF&"   # Unspoken: Pure White
+            primary_color    = custom_highlight_color or "&H0066FF00&"   # Spoken: Electric Lime
+            palette          = [primary_color]
             outline_color    = "&H00000000&"   # Deep Black
             back_color       = "&H99000000&"
             bold             = "-1"
@@ -102,7 +124,8 @@ class SubtitleBurner:
         elif style_lower == "glowing":
             font_name        = "Arial Black,Impact,sans-serif"
             secondary_color  = "&H00E0E0E0&"
-            primary_color    = custom_highlight_color or "&H00F0FF00&"   # Neon Cyan
+            primary_color    = custom_highlight_color or "&H00FFF000&"   # Neon Cyan
+            palette          = ["&H00FFF000&", "&H00AA00FF&"]          # Cyan + Magenta
             outline_color    = "&H00AA00FF&"   # Neon Magenta glow
             back_color       = "&H66000000&"
             bold             = "-1"
@@ -113,6 +136,7 @@ class SubtitleBurner:
             font_name        = "Impact,Arial Black,sans-serif"
             secondary_color  = "&H00FFFFFF&"
             primary_color    = custom_highlight_color or "&H002020FF&"   # Scarlet Red
+            palette          = [primary_color]
             outline_color    = "&H00000000&"
             back_color       = "&H99000000&"
             bold             = "-1"
@@ -123,6 +147,7 @@ class SubtitleBurner:
             font_name        = "Courier New,monospace"
             secondary_color  = "&H00BBBBBB&"
             primary_color    = custom_highlight_color or "&H0000FF7F&"   # Spring Green
+            palette          = [primary_color]
             outline_color    = "&H99000000&"
             back_color       = "&H88000000&"
             bold             = "0"
@@ -133,6 +158,7 @@ class SubtitleBurner:
             font_name        = "Montserrat,Arial,sans-serif"
             secondary_color  = "&H00FFFFFF&"
             primary_color    = custom_highlight_color or "&H0066E0FF&"   # Champagne Gold
+            palette          = [primary_color]
             outline_color    = "&H77000000&"
             back_color       = "&H44000000&"
             bold             = "-1"
@@ -143,6 +169,7 @@ class SubtitleBurner:
             font_name        = "Impact,Arial Black,sans-serif"
             secondary_color  = "&H00FFFFFF&"   # Unspoken: Pure White
             primary_color    = custom_highlight_color or "&H0000E5FF&"   # Spoken: Hormozi Yellow
+            palette          = [primary_color]
             outline_color    = "&H00000000&"   # Thick Black
             back_color       = "&H88000000&"
             bold             = "-1"
@@ -168,9 +195,9 @@ class SubtitleBurner:
         events: List[str] = []
 
         # Optional Top Hook Banner (Stays visible across whole clip duration)
+        clip_dur = max(1.0, clip_end - clip_start)
         if hook_title and hook_title.strip():
             clean_hook = hook_title.strip().upper()
-            clip_dur = max(1.0, clip_end - clip_start)
             h_start = self._ass_ts(0.0)
             h_end   = self._ass_ts(clip_dur)
             hook_pos = f"{{\\pos({int(canvas_width / 2)},240)}}"
@@ -178,38 +205,66 @@ class SubtitleBurner:
                 f"Dialogue: 1,{h_start},{h_end},HookBadge,,0,0,0,,{hook_pos}{{\\b1}}{clean_hook}"
             )
 
-        # Build precision word-to-word popup highlight events
+        # Build progressive combining highlight events that stay active for the entire speech duration
         effective_chunk = max(1, min(chunk_size, 6))
+        chunks = [
+            clip_words[i : i + effective_chunk]
+            for i in range(0, len(clip_words), effective_chunk)
+            if clip_words[i : i + effective_chunk]
+        ]
         pos_tag = f"{{\\pos({pos_x},{pos_y})}}"
 
-        for i in range(0, len(clip_words), effective_chunk):
-            chunk = clip_words[i : i + effective_chunk]
-            if not chunk:
-                continue
-
+        for c_idx, chunk in enumerate(chunks):
             for w_idx, active_w in enumerate(chunk):
                 w_start = active_w["start"]
 
-                # Active word ends either when next word in chunk begins or when active word ends
-                if w_idx + 1 < len(chunk):
-                    w_end = max(w_start + 0.08, chunk[w_idx + 1]["start"])
+                # If first chunk starts shortly after video begins, start at 0.0s for instant readability
+                if c_idx == 0 and w_idx == 0 and w_start > 0.0 and w_start <= 0.6:
+                    t_start = 0.0
                 else:
-                    w_end = max(w_start + 0.12, active_w["end"])
+                    t_start = w_start
 
-                t_start_str = self._ass_ts(w_start)
-                t_end_str   = self._ass_ts(w_end)
+                # Highlight end: seamless transition to next word or next chunk (no gaps)
+                if w_idx + 1 < len(chunk):
+                    t_end = max(t_start + 0.08, chunk[w_idx + 1]["start"])
+                else:
+                    # Last word in chunk: hold highlight seamlessly until next chunk starts
+                    if c_idx + 1 < len(chunks):
+                        next_chunk_start = chunks[c_idx + 1][0]["start"]
+                        if next_chunk_start > t_start and (next_chunk_start - active_w["end"]) <= 1.8:
+                            t_end = next_chunk_start
+                        else:
+                            t_end = max(t_start + 0.15, min(clip_dur, active_w["end"] + 1.2))
+                    else:
+                        t_end = max(t_start + 0.2, clip_dur)
 
-                # Format chunk: non-active words are base color, active word is popped & highlighted
+                t_start_str = self._ass_ts(t_start)
+                t_end_str   = self._ass_ts(t_end)
+
+                # Format words in chunk:
+                # 1. Spoken words (j < w_idx): stay in their vibrant combined color!
+                # 2. Active word (j == w_idx): pops in active color + 114% scale!
+                # 3. Unspoken words (j > w_idx): crisp white base
                 words_fmt = []
                 for j, w in enumerate(chunk):
                     word_str = w["word"].upper() if uppercase else w["word"]
-                    if j == w_idx:
-                        # Highlighted active word with popup scale
+                    word_color = palette[j % len(palette)]
+
+                    if j < w_idx:
+                        # Already spoken: stays highlighted in combined color
                         words_fmt.append(
-                            f"{{\\c{primary_color}\\fscx112\\fscy112}}{word_str}{{\\c{secondary_color}\\fscx100\\fscy100}}"
+                            f"{{\\c{word_color}\\fscx100\\fscy100}}{word_str}"
+                        )
+                    elif j == w_idx:
+                        # Actively spoken right now: pops in vibrant color + scale!
+                        words_fmt.append(
+                            f"{{\\c{word_color}\\fscx114\\fscy114}}{word_str}"
                         )
                     else:
-                        words_fmt.append(word_str)
+                        # Upcoming unspoken word: base white
+                        words_fmt.append(
+                            f"{{\\c{secondary_color}\\fscx100\\fscy100}}{word_str}"
+                        )
 
                 phrase = " ".join(words_fmt)
                 events.append(

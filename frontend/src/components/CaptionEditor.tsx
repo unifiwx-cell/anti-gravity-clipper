@@ -31,6 +31,17 @@ interface StylePreset {
 
 const CLIPERG_STYLES: StylePreset[] = [
   {
+    id: "multicolor",
+    name: "Combined Multi-Color",
+    creator: "Viral Creator Pop",
+    font: "Impact, sans-serif",
+    desc: "Dynamic rainbow pop: Yellow, Lime Green, Cyan, and Coral Pink combine word by word",
+    badgeCls: "bg-gradient-to-r from-yellow-400 via-emerald-400 to-cyan-400 text-black font-black",
+    baseCls: "font-black tracking-wider uppercase text-white [text-shadow:_0_3px_0_#000,_0_-3px_0_#000,_3px_0_0_#000,_-3px_0_0_#000]",
+    activeCls: "font-black tracking-wider uppercase scale-110 [text-shadow:_0_4px_0_#000,_0_-4px_0_#000,_4px_0_0_#000,_-4px_0_0_#000]",
+    defaultHex: "#FFE500"
+  },
+  {
     id: "hormozi",
     name: "Hormozi Classic",
     creator: "Alex Hormozi",
@@ -113,7 +124,7 @@ export const CaptionEditor: React.FC<CaptionEditorProps> = ({
   const [playing,       setPlaying]       = useState(false);
   const [currentTime,   setCurrentTime]   = useState(0);
   const [duration,      setDuration]      = useState(clip.duration || 30);
-  const [style,         setStyle]         = useState<CaptionStyle>("hormozi");
+  const [style,         setStyle]         = useState<CaptionStyle>("multicolor");
   const [fontSize,      setFontSize]      = useState(26);
   const [chunkSize,     setChunkSize]     = useState(4);
   const [enableHook,    setEnableHook]    = useState(true);
@@ -167,35 +178,44 @@ export const CaptionEditor: React.FC<CaptionEditorProps> = ({
 
   const getDisplayWords = () => {
     if (words.length === 0) {
-      return [{ word: "CLIPERG", isActive: true }, { word: "CAPTIONS", isActive: false }];
+      return [
+        { word: "CLIPERG", isSpoken: true, isActive: true, color: "#FFE500" },
+        { word: "CAPTIONS", isSpoken: false, isActive: false, color: "#FFFFFF" }
+      ];
     }
 
-    // Find the word that is currently active or most recently spoken
-    let currentIdx = -1;
+    // Continuous word tracking: find active word index without losing highlight between words
+    let currentIdx = 0;
     for (let i = 0; i < words.length; i++) {
       const w = words[i];
-      const nextStart = i + 1 < words.length ? words[i + 1].start : w.end + 0.3;
-      if (currentTime >= w.start && currentTime < Math.max(w.end, nextStart)) {
-        if (currentTime > w.end + 0.7) {
-          currentIdx = -1;
-        } else {
-          currentIdx = i;
-        }
+      const nextStart = i + 1 < words.length ? words[i + 1].start : (duration || 9999);
+      if (currentTime >= w.start && currentTime < nextStart) {
+        currentIdx = i;
+        break;
+      } else if (currentTime < w.start && i === 0) {
+        currentIdx = 0;
+        break;
+      } else if (i === words.length - 1 && currentTime >= w.start) {
+        currentIdx = i;
         break;
       }
     }
 
-    if (currentIdx === -1) {
-      const firstUpcoming = words.findIndex((w) => w.start > currentTime);
-      if (firstUpcoming !== -1 && words[firstUpcoming].start - currentTime < 0.25) {
-        const chunkStart = Math.floor(firstUpcoming / chunkSize) * chunkSize;
-        const chunk = words.slice(chunkStart, chunkStart + chunkSize);
-        return chunk.map((w) => ({
-          word: w.word,
-          isActive: false,
-        }));
-      }
-      return [];
+    // Dynamic creator color palettes
+    let palette = ["#FFE500"];
+    if (style === "multicolor") {
+      // Dynamic rainbow pop combining vibrant creator colors word by word
+      palette = ["#FFE500", "#00FF66", "#00F0FF", "#FF3366", "#FF9900"];
+    } else if (style === "beast") {
+      palette = ["#00FF66"];
+    } else if (style === "glowing") {
+      palette = ["#00F0FF", "#E879F9"];
+    } else if (style === "redalert") {
+      palette = ["#FF2E2E"];
+    } else if (style === "typewriter") {
+      palette = ["#00FF7F"];
+    } else if (style === "minimal") {
+      palette = ["#FDE68A"];
     }
 
     // Stable chunk based on chunkSize
@@ -203,10 +223,19 @@ export const CaptionEditor: React.FC<CaptionEditorProps> = ({
     const chunkEnd   = Math.min(words.length, chunkStart + chunkSize);
     const chunk      = words.slice(chunkStart, chunkEnd);
 
-    return chunk.map((w, idx) => ({
-      word: w.word,
-      isActive: chunkStart + idx === currentIdx,
-    }));
+    return chunk.map((w, idx) => {
+      const globalIdx = chunkStart + idx;
+      const isSpoken  = globalIdx <= currentIdx;
+      const isActive  = globalIdx === currentIdx;
+      const color     = palette[idx % palette.length];
+
+      return {
+        word:     w.word,
+        isSpoken,
+        isActive,
+        color,
+      };
+    });
   };
 
   const currentPreset = CLIPERG_STYLES.find((s) => s.id === style) || CLIPERG_STYLES[0];
@@ -343,8 +372,14 @@ export const CaptionEditor: React.FC<CaptionEditorProps> = ({
                 {getDisplayWords().map((item, i) => (
                   <span
                     key={i}
-                    className={`inline-block transition-all duration-100 ${
-                      item.isActive ? currentPreset.activeCls : currentPreset.baseCls
+                    style={{
+                      color: item.isSpoken ? item.color : "rgba(255, 255, 255, 0.9)",
+                      textShadow: item.isSpoken
+                        ? "0 3px 0 #000, 0 -3px 0 #000, 3px 0 0 #000, -3px 0 0 #000, 0 4px 14px rgba(0,0,0,0.85)"
+                        : "0 3px 0 #000, 0 -3px 0 #000, 3px 0 0 #000, -3px 0 0 #000",
+                    }}
+                    className={`inline-block transition-transform duration-100 uppercase tracking-wider font-black ${
+                      item.isActive ? "scale-115 drop-shadow-[0_0_14px_rgba(255,255,255,0.45)]" : "scale-100"
                     }`}
                   >
                     {item.word}

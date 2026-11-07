@@ -474,6 +474,14 @@ export default function Home() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               {[
                 {
+                  name: "Combined Multi-Color",
+                  creator: "Viral Creator Pop",
+                  desc: "Dynamic rainbow highlight: Yellow, Lime Green, Cyan, and Coral Pink combine word by word.",
+                  preview: "bg-gradient-to-r from-yellow-400 via-emerald-400 to-cyan-400 text-black font-black",
+                  sampleActive: "text-yellow-300 font-black",
+                  sampleBase: "text-white font-black"
+                },
+                {
                   name: "Hormozi Classic",
                   creator: "Alex Hormozi",
                   desc: "Ultra-bold Impact, pure white base, vibrant amber/yellow highlight, thick black outline.",

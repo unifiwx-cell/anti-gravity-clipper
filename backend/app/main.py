@@ -97,7 +97,7 @@ class ProcessRequest(BaseModel):
 class RenderRequest(BaseModel):
     session_id: str
     clip_id:    int
-    style:      str   = "hormozi"  # hormozi | beast | glowing | redalert | typewriter | minimal
+    style:      str   = "multicolor"  # multicolor | hormozi | beast | glowing | redalert | typewriter | minimal
     font_size:  int   = 72        # scale for 1080p canvas
     pos_x_pct:  float = 50.0
     pos_y_pct:  float = 80.0

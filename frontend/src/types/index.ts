@@ -70,7 +70,7 @@ export interface ProjectSummary {
   created_at:  string;
 }
 
-export type CaptionStyle = "hormozi" | "beast" | "glowing" | "redalert" | "typewriter" | "minimal";
+export type CaptionStyle = "multicolor" | "hormozi" | "beast" | "glowing" | "redalert" | "typewriter" | "minimal";
 
 export interface CaptionConfig {
   style:         CaptionStyle;
