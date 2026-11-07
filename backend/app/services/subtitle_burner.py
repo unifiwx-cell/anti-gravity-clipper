@@ -1,21 +1,24 @@
 """
-subtitle_burner.py  —  Anti-Gravity Clipper
-============================================
-Generates ASS subtitle files using proper karaoke \\kf timing so that:
+subtitle_burner.py — Cliphi Style Caption Engine
+================================================
+Generates ASS subtitle files using precision karaoke \\kf timing for viral short-form videos.
 
-  • The 4-word phrase line stays COMPLETELY FIXED on screen (no flicker)
-  • The highlight sweeps LEFT -> RIGHT word-by-word following the speech
-  • Words not yet spoken appear in white (SecondaryColour / pre-fill state)
-  • Words being / already spoken appear in the accent colour (PrimaryColour / post-fill state)
+Supported Cliphi Text Styles:
+  1. hormozi:    Impact ultra-bold, white base, amber/yellow highlight, thick black outline.
+  2. beast:      Impact/Arial Black, white base, electric lime/green highlight, heavy stroke.
+  3. glowing:    Arial Black, white base, radiant cyan highlight, neon magenta glow outline.
+  4. redalert:   Impact/Arial Black, white base, punchy scarlet red highlight, bold outline.
+  5. typewriter: Courier New monospace, dark translucent backing box, spring green highlight.
+  6. minimal:    Inter/Montserrat modern bold sans, white base, soft champagne gold sweep.
 
-ASS karaoke colour mapping:
-  SecondaryColour = colour BEFORE the fill reaches a syllable  (unhighlighted / white)
-  PrimaryColour   = colour AFTER  the fill passes a syllable  (highlighted / amber/cyan/green)
+Also supports:
+  • Optional on-screen top hook banner badge (e.g. "WAIT FOR THE END 🤯")
+  • Configurable chunk size (1 word punchy vs 3-4 words phrase)
 """
 
 import subprocess
 from pathlib import Path
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 
 from app.config import settings
 
@@ -23,8 +26,6 @@ from app.config import settings
 class SubtitleBurner:
     def __init__(self, renders_dir: Path = settings.RENDERS_DIR):
         self.renders_dir = renders_dir
-
-    # ── Time formatting ───────────────────────────────────────────────────────
 
     def _ass_ts(self, seconds: float) -> str:
         """Float seconds -> ASS timestamp H:MM:SS.cs"""
@@ -44,8 +45,6 @@ class SubtitleBurner:
         ms = min(999, int(round((seconds % 1) * 1000)))
         return f"{h:02d}:{m:02d}:{s:02d},{ms:03d}"
 
-    # ── ASS builder ───────────────────────────────────────────────────────────
-
     def build_ass_file(
         self,
         words: List[Dict[str, Any]],
@@ -58,16 +57,14 @@ class SubtitleBurner:
         output_ass_path: Path,
         canvas_width:  int = 1080,
         canvas_height: int = 1920,
+        hook_title: Optional[str] = None,
+        chunk_size: int = 4,
+        custom_highlight_color: Optional[str] = None,
     ):
         """
-        Build an ASS file with per-phrase karaoke events.
-
-        Each 4-word phrase = ONE Dialogue line.
-        {\\kf<centiseconds>} before each word sweeps the fill colour
-        from SecondaryColour (white/base) -> PrimaryColour (accent/highlight).
-        This means the text never re-renders between words -> zero flicker.
+        Build an ASS file with Cliphi-styled karaoke word highlights.
         """
-        # ── Filter & rebase words ────────────────────────────────────────────
+        # Rebase words relative to clip start
         clip_words: List[Dict] = []
         for w in words:
             ws, we = w.get("start", 0), w.get("end", 0)
@@ -77,81 +74,128 @@ class SubtitleBurner:
                     "start": max(0.0, round(ws - clip_start, 3)),
                     "end":   max(0.0, round(we - clip_start, 3)),
                 })
-        if not clip_words:
-            # Write an empty ASS so FFmpeg doesn't fail
-            self._write_ass(output_ass_path, canvas_width, canvas_height,
-                            "", "", "", "", "", "", "", [], "")
-            return
 
-        # ── Pixel anchor for \\pos(x,y) ──────────────────────────────────────
-        pos_x = int(canvas_width  * pos_x_pct / 100.0)
-        pos_y = int(canvas_height * pos_y_pct / 100.0)
+        # Pixel anchor for \pos(x,y)
+        pos_x = int(canvas_width  * (pos_x_pct / 100.0))
+        pos_y = int(canvas_height * (pos_y_pct / 100.0))
 
-        # ── Style definitions ────────────────────────────────────────────────
-        #
-        # KEY: In ASS karaoke —
-        #   SecondaryColour = text colour BEFORE fill sweeps through  -> WHITE / BASE
-        #   PrimaryColour   = text colour AFTER  fill sweeps through  -> ACCENT / HIGHLIGHT
-        #
-        # &HAABBGGRR  (Alpha, Blue, Green, Red — reversed from normal RGB)
-        #   &H00FFFFFF& = opaque white
-        #   &H0000E5FF& = opaque amber/yellow   (Hormozi accent)
-        #   &H00F0FF00& = opaque neon cyan       (Glow accent)
-        #   &H0000FF7F& = opaque spring green    (Typewriter accent)
+        # ── Color mappings in ASS &HAABBGGRR (Blue-Green-Red reversed) ────────
+        # Hormozi:   &H0000E5FF& (Amber Yellow)
+        # Beast:     &H0033FF00& (Electric Lime/Green)
+        # Glowing:   &H00F0FF00& (Vibrant Cyan) with &H00AA00FF& (Neon Magenta outline)
+        # Red Alert: &H002020FF& (Punchy Red)
+        # Typewriter:&H0000FF7F& (Spring Green)
+        # Minimal:   &H0066E0FF& (Soft Champagne Gold)
 
-        if style == "hormozi":
-            font_name        = "Impact"
-            secondary_color  = "&H00FFFFFF&"   # unhighlighted words = WHITE
-            primary_color    = "&H0000E5FF&"   # highlighted words   = AMBER/YELLOW
-            outline_color    = "&H00000000&"   # pure black outline
-            back_color       = "&H88000000&"   # semi-transparent black shadow box
+        style_lower = style.lower().strip()
+
+        if style_lower == "beast":
+            font_name        = "Impact,Arial Black,sans-serif"
+            secondary_color  = "&H00FFFFFF&"   # Unspoken: Pure White
+            primary_color    = custom_highlight_color or "&H0033FF00&"   # Spoken: Electric Lime
+            outline_color    = "&H00000000&"   # Deep Black
+            back_color       = "&H99000000&"
+            bold             = "-1"
+            outline_sz       = "7"
+            shadow_sz        = "4"
+            uppercase        = True
+        elif style_lower == "glowing":
+            font_name        = "Arial Black,Impact,sans-serif"
+            secondary_color  = "&H00E0E0E0&"
+            primary_color    = custom_highlight_color or "&H00F0FF00&"   # Neon Cyan
+            outline_color    = "&H00AA00FF&"   # Neon Magenta glow
+            back_color       = "&H66000000&"
+            bold             = "-1"
+            outline_sz       = "6"
+            shadow_sz        = "5"
+            uppercase        = False
+        elif style_lower == "redalert":
+            font_name        = "Impact,Arial Black,sans-serif"
+            secondary_color  = "&H00FFFFFF&"
+            primary_color    = custom_highlight_color or "&H002020FF&"   # Scarlet Red
+            outline_color    = "&H00000000&"
+            back_color       = "&H99000000&"
             bold             = "-1"
             outline_sz       = "6"
             shadow_sz        = "3"
             uppercase        = True
-        elif style == "glowing":
-            font_name        = "Arial Black"
-            secondary_color  = "&H00DDDDDD&"   # unhighlighted = light grey
-            primary_color    = "&H00F0FF00&"   # highlighted   = neon cyan
-            outline_color    = "&H00AA00FF&"   # magenta outline glow
-            back_color       = "&H55000000&"
-            bold             = "-1"
-            outline_sz       = "5"
-            shadow_sz        = "4"
-            uppercase        = False
-        else:  # typewriter
-            font_name        = "Courier New"
-            secondary_color  = "&H00AAAAAA&"   # unhighlighted = grey
-            primary_color    = "&H0000FF7F&"   # highlighted   = spring green
+        elif style_lower == "typewriter":
+            font_name        = "Courier New,monospace"
+            secondary_color  = "&H00BBBBBB&"
+            primary_color    = custom_highlight_color or "&H0000FF7F&"   # Spring Green
             outline_color    = "&H99000000&"
-            back_color       = "&H77000000&"
+            back_color       = "&H88000000&"
             bold             = "0"
-            outline_sz       = "2"
+            outline_sz       = "3"
             shadow_sz        = "1"
             uppercase        = False
+        elif style_lower == "minimal":
+            font_name        = "Montserrat,Arial,sans-serif"
+            secondary_color  = "&H00FFFFFF&"
+            primary_color    = custom_highlight_color or "&H0066E0FF&"   # Champagne Gold
+            outline_color    = "&H77000000&"
+            back_color       = "&H44000000&"
+            bold             = "-1"
+            outline_sz       = "4"
+            shadow_sz        = "2"
+            uppercase        = False
+        else: # hormozi (default)
+            font_name        = "Impact,Arial Black,sans-serif"
+            secondary_color  = "&H00FFFFFF&"   # Unspoken: Pure White
+            primary_color    = custom_highlight_color or "&H0000E5FF&"   # Spoken: Hormozi Yellow
+            outline_color    = "&H00000000&"   # Thick Black
+            back_color       = "&H88000000&"
+            bold             = "-1"
+            outline_sz       = "7"
+            shadow_sz        = "4"
+            uppercase        = True
 
-        # ── Build Dialogue events ────────────────────────────────────────────
-        CHUNK = 4
+        # Header with styles: Default for captions, HeaderStyle for top hook title
+        header = (
+            f"[Script Info]\n"
+            f"ScriptType: v4.00+\n"
+            f"PlayResX: {canvas_width}\n"
+            f"PlayResY: {canvas_height}\n"
+            f"ScaledBorderAndShadow: yes\n\n"
+            f"[V4+ Styles]\n"
+            f"Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding\n"
+            f"Style: Default,{font_name},{font_size},{primary_color},{secondary_color},{outline_color},{back_color},{bold},0,0,0,100,100,2,0,1,{outline_sz},{shadow_sz},5,20,20,20,1\n"
+            f"Style: HookBadge,Impact,{int(font_size * 0.75)},&H00FFFFFF&,&H00FFFFFF&,&H00000000&,&HAA000000&,-1,0,0,0,100,100,2,0,1,5,3,5,20,20,20,1\n\n"
+            f"[Events]\n"
+            f"Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n"
+        )
+
         events: List[str] = []
+
+        # Optional Top Hook Banner (Stays visible across whole clip duration)
+        if hook_title and hook_title.strip():
+            clean_hook = hook_title.strip().upper()
+            clip_dur = max(1.0, clip_end - clip_start)
+            h_start = self._ass_ts(0.0)
+            h_end   = self._ass_ts(clip_dur)
+            # Banner positioned at top third (Y ~ 240px)
+            hook_pos = f"{{\\pos({int(canvas_width / 2)},240)}}"
+            events.append(
+                f"Dialogue: 1,{h_start},{h_end},HookBadge,,0,0,0,,{hook_pos}{{\\b1}}{clean_hook}"
+            )
+
+        # Build karaoke events for words
+        effective_chunk = max(1, min(chunk_size, 6))
         pos_tag = f"{{\\pos({pos_x},{pos_y})}}"
 
-        for i in range(0, len(clip_words), CHUNK):
-            chunk = clip_words[i : i + CHUNK]
+        for i in range(0, len(clip_words), effective_chunk):
+            chunk = clip_words[i : i + effective_chunk]
             if not chunk:
                 continue
 
             t0 = chunk[0]["start"]
             t1 = chunk[-1]["end"]
             if t1 <= t0:
-                t1 = t0 + max(0.5, sum(
-                    max(0.05, w["end"] - w["start"]) for w in chunk
-                ))
+                t1 = t0 + max(0.4, sum(max(0.05, w["end"] - w["start"]) for w in chunk))
 
             line_start = self._ass_ts(t0)
             line_end   = self._ass_ts(t1)
 
-            # Build karaoke-tagged text
-            # {\\kf<N>}WORD  — N centiseconds for this word's fill duration
             tokens: List[str] = []
             for w in chunk:
                 dur_cs = max(5, int(round(max(0.05, w["end"] - w["start"]) * 100)))
@@ -163,50 +207,8 @@ class SubtitleBurner:
                 f"Dialogue: 0,{line_start},{line_end},Default,,0,0,0,,{pos_tag}{phrase}"
             )
 
-        self._write_ass(
-            output_ass_path, canvas_width, canvas_height,
-            font_name, str(font_size),
-            primary_color, secondary_color, outline_color, back_color,
-            bold, outline_sz, shadow_sz,
-            events,
-        )
-
-    def _write_ass(
-        self,
-        path: Path,
-        cw: int, ch: int,
-        font: str, fsize: str,
-        primary: str, secondary: str, outline: str, back: str,
-        bold: str, outline_sz: str, shadow_sz: str,
-        events: List[str],
-    ):
-        header = (
-            f"[Script Info]\n"
-            f"ScriptType: v4.00+\n"
-            f"PlayResX: {cw}\n"
-            f"PlayResY: {ch}\n"
-            f"ScaledBorderAndShadow: yes\n"
-            f"\n"
-            f"[V4+ Styles]\n"
-            f"Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, "
-            f"OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, "
-            f"ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, "
-            f"Alignment, MarginL, MarginR, MarginV, Encoding\n"
-            f"Style: Default,"
-            f"{font},{fsize},"
-            f"{primary},{secondary},{outline},{back},"
-            f"{bold},0,0,0,"
-            f"100,100,2,0,"           # ScaleX, ScaleY, Spacing, Angle
-            f"1,{outline_sz},{shadow_sz},"  # BorderStyle, Outline, Shadow
-            f"5,20,20,20,1\n"         # Alignment=5 (centered), margins, encoding
-            f"\n"
-            f"[Events]\n"
-            f"Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n"
-        )
-        with open(path, "w", encoding="utf-8") as f:
+        with open(output_ass_path, "w", encoding="utf-8") as f:
             f.write(header + "\n".join(events) + "\n")
-
-    # ── SRT builder ───────────────────────────────────────────────────────────
 
     def build_srt_file(
         self,
@@ -217,7 +219,7 @@ class SubtitleBurner:
         words_per_line: int = 6,
         rebase: bool = True,
     ):
-        """Generate a standard .srt subtitle file."""
+        """Generate standard .srt subtitle file."""
         clip_words: List[Dict] = []
         for w in words:
             ws, we = w.get("start", 0), w.get("end", 0)
@@ -244,13 +246,9 @@ class SubtitleBurner:
         with open(output_srt_path, "w", encoding="utf-8") as f:
             f.write("\n".join(lines))
 
-    # ── Caption burner ────────────────────────────────────────────────────────
-
     def burn_captions(self, clip_path: Path, ass_path: Path, render_id: str) -> Path:
-        """Burn ASS captions into the video using FFmpeg."""
+        """Burn ASS captions onto vertical video using FFmpeg."""
         output_path = self.renders_dir / f"final_{render_id}.mp4"
-
-        # Windows path escaping for FFmpeg subtitles filter
         ass_str = str(ass_path).replace("\\", "/").replace(":", "\\:")
 
         cmd = [
@@ -265,7 +263,5 @@ class SubtitleBurner:
         ]
         result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         if result.returncode != 0:
-            raise RuntimeError(
-                f"FFmpeg subtitle burn failed:\n{result.stderr[-1000:]}"
-            )
+            raise RuntimeError(f"FFmpeg subtitle burn failed:\n{result.stderr[-800:]}")
         return output_path

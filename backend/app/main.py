@@ -97,10 +97,13 @@ class ProcessRequest(BaseModel):
 class RenderRequest(BaseModel):
     session_id: str
     clip_id:    int
-    style:      str   = "hormozi"
+    style:      str   = "hormozi"  # hormozi | beast | glowing | redalert | typewriter | minimal
     font_size:  int   = 72        # scale for 1080p canvas
     pos_x_pct:  float = 50.0
     pos_y_pct:  float = 80.0
+    hook_title: Optional[str] = None
+    chunk_size: int   = 4
+    custom_highlight_color: Optional[str] = None
 
 
 # ── Background pipeline ───────────────────────────────────────────────────────
@@ -291,6 +294,9 @@ async def render_clip(req: RenderRequest):
         output_ass_path=ass_path,
         canvas_width=1080,
         canvas_height=1920,
+        hook_title=req.hook_title,
+        chunk_size=req.chunk_size,
+        custom_highlight_color=req.custom_highlight_color,
     )
 
     final_path = subtitle_burner.burn_captions(

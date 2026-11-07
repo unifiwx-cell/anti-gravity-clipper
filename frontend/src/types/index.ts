@@ -10,12 +10,18 @@ export interface Clip {
   end_time:              number;
   duration:              number;
   viral_title:           string;
+  on_screen_hook?:       string;
+  hook_options?:         string[];
   youtube_title?:        string;
+  tiktok_title?:         string;
+  reels_title?:          string;
+  tweet_text?:           string;
   description:           string;
   youtube_description?:  string;
   youtube_tags?:         string[];
   hook_score:            number;
   interest_level?:       "high" | "medium" | "low";
+  category?:             string;
   reasoning:             string;
   video_url?:            string;
   words?:                WordTimestamp[];
@@ -64,11 +70,14 @@ export interface ProjectSummary {
   created_at:  string;
 }
 
-export type CaptionStyle = "hormozi" | "glowing" | "typewriter";
+export type CaptionStyle = "hormozi" | "beast" | "glowing" | "redalert" | "typewriter" | "minimal";
 
 export interface CaptionConfig {
-  style:    CaptionStyle;
-  fontSize: number;
-  xPercent: number;
-  yPercent: number;
+  style:         CaptionStyle;
+  fontSize:      number;
+  xPercent:      number;
+  yPercent:      number;
+  hookTitle?:    string;
+  chunkSize?:    number;
+  highlightColor?: string;
 }
