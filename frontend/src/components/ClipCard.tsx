@@ -234,7 +234,7 @@ export const ClipCard: React.FC<ClipCardProps> = ({
             <span>SRT</span>
           </button>
 
-          {/* Open Cliphi Studio Editor */}
+          {/* Open Cliperg Studio Editor */}
           <button
             type="button"
             className="px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white transition flex items-center gap-1.5 text-xs font-bold shadow-lg shadow-purple-600/25"

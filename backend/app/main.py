@@ -137,7 +137,7 @@ def background_pipeline(session_id: str, url: str):
         # ── Stage 3: AI hook detection + YouTube SEO ─────────────────────────
         session.update(stage="AI analysing transcript -> detecting viral hooks...", progress=50)
         save_projects_to_disk()
-        ai_result  = hook_detector.detect_hooks(transcript, target_clips_count=8)
+        ai_result  = hook_detector.detect_hooks(transcript, target_clips_count=8, video_info=info)
         clips      = ai_result.get("clips", [])
         video_analysis = ai_result.get("video_analysis", {})
         session["clips"]          = clips

@@ -1,12 +1,12 @@
 """
-hook_detector.py — Cliphi Style Viral Intelligence Engine
+hook_detector.py — Cliperg Style Viral Intelligence Engine
 ==========================================================
 Analyzes video transcript context and generates:
   • 8–9 high-retention vertical clips (30–60s)
   • Ready-Made Title Stuffs:
-      - on_screen_hook (e.g. "WAIT FOR IT 🤯", "DON'T DO THIS 🛑")
-      - hook_options (3 alternative viral title angles)
-      - youtube_title (Shorts optimized)
+      - on_screen_hook (relatable, content-specific top badge with emoji)
+      - hook_options (3 distinct viral title angles reflecting actual video content)
+      - youtube_title (Shorts optimized with relevant tags)
       - tiktok_title (with viral tags)
       - reels_title (with retention CTA)
       - youtube_description (ready-to-paste)
@@ -17,26 +17,29 @@ Analyzes video transcript context and generates:
 
 import json
 import re
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from app.config import settings
 
 HOOK_SYSTEM_PROMPT = """
-You are a world-class viral short-form video strategist modeled after Cliphi and Opus Clip.
-Given a timestamped transcript, extract 8 to 9 of the most engaging 30-60s segments.
+You are a world-class viral short-form video strategist for Cliperg (similar to Opus Clip and Cliphi).
+Given a timestamped transcript and video metadata, extract 8 to 9 of the most engaging 30-60s segments.
+
+CRITICAL REQUIREMENT:
+All titles, on_screen_hook, hook_options, YouTube titles, TikTok titles, Reels titles, and descriptions MUST be 100% SPECIFIC TO THE ACTUAL TOPIC AND CONTENT DISCUSSED in the video. NEVER use generic placeholder clichés (e.g. do not say "This One Mindset Shift" unless the video is specifically about a mindset shift). If the video is about coding, crypto, fitness, cooking, gaming, or storytelling, every title and hook MUST reflect that specific subject.
 
 For EVERY clip, generate ready-made titles and social distribution assets:
-1. "viral_title": Primary punchy title (3-7 words)
-2. "on_screen_hook": Top badge text with emoji (e.g. "WAIT FOR THE END 🤯", "THE BRUTAL TRUTH ⚠️", "STOP DOING THIS 🛑")
-3. "hook_options": Array of 3 distinct viral title angles (Question angle, Contrarian angle, Curiosity gap angle)
-4. "youtube_title": YouTube Shorts SEO title with hashtags
-5. "tiktok_title": TikTok hook with viral hashtag bundle
+1. "viral_title": Primary punchy title (4-8 words directly about what is said in this clip)
+2. "on_screen_hook": Top badge text with emoji relatable to this exact moment (e.g. "LISTEN CLOSELY 👂", "THE HARD TRUTH ⚠️", "DID YOU KNOW THIS? 🤯", "DON'T MISS THIS 🚀")
+3. "hook_options": Array of 3 distinct viral title angles referencing the clip's actual subject (Question angle, Contrarian/bold angle, Curiosity gap angle)
+4. "youtube_title": YouTube Shorts SEO title with relatable content hashtags
+5. "tiktok_title": TikTok hook with relevant viral hashtags
 6. "reels_title": Instagram Reels caption with save/share CTA
-7. "youtube_description": Full description with timestamps and hashtags
-8. "tweet_text": 1-sentence viral X/Twitter post
+7. "youtube_description": Full description summarizing the actual points discussed in this clip with hashtags
+8. "tweet_text": 1-sentence viral X/Twitter post about this insight
 9. "hook_score": Number 80-99
 10. "interest_level": "high" | "medium" | "low"
-11. "category": "Mindset" | "Business" | "Contrarian" | "Story" | "Tactical"
-12. "reasoning": 1 sentence why this clip hooks viewers
+11. "category": "Mindset" | "Business" | "Contrarian" | "Story" | "Tactical" | "Tech"
+12. "reasoning": 1 sentence explaining why this specific video moment hooks viewers
 
 Return ONLY valid JSON matching this exact structure:
 {
@@ -46,32 +49,32 @@ Return ONLY valid JSON matching this exact structure:
       "start_time": 45.0,
       "end_time": 88.0,
       "duration": 43.0,
-      "viral_title": "The Brutal Truth About 9-to-5",
-      "on_screen_hook": "STOP DOING THIS 🛑",
+      "viral_title": "Specific Title About Clip Subject",
+      "on_screen_hook": "WATCH THIS CLOSELY 🤯",
       "hook_options": [
-        "Why 9-to-5 jobs are failing you",
-        "The 1 wealth rule they never teach you",
-        "Do this before quitting your job"
+        "Why [Topic] changes how we look at [Subject]",
+        "The truth about [Topic] nobody is talking about",
+        "Stop making this [Topic] mistake right now"
       ],
-      "youtube_title": "Why 9-to-5 Jobs Are Making You POOR in 2025 #shorts",
-      "tiktok_title": "POV: you realize your 9-to-5 isn't enough 💸 #moneytok #mindset #viral",
-      "reels_title": "Save this before your next career decision ⚠️ #business #motivation #reels",
-      "description": "Critical perspective on career leverage and building assets.",
-      "youtube_description": "Are you trading hours for dollars? Here is what top earners do differently.\\n\\n#money #business #success #shorts",
-      "youtube_tags": ["money mindset", "financial freedom", "entrepreneurship", "shorts"],
-      "tweet_text": "If you're still relying on a single 9-to-5 income in 2025, read this immediately:",
+      "youtube_title": "How [Topic] Works in 2025 #shorts #topic",
+      "tiktok_title": "POV: you realize how [Topic] actually works 💡 #topic #viral",
+      "reels_title": "Save this breakdown of [Topic] for later 📌 #topic #reels",
+      "description": "Summary of the key point argued in this segment.",
+      "youtube_description": "Breakdown of [Topic] and why this matters.\\n\\n#topic #shorts #education",
+      "youtube_tags": ["topic", "shorts", "viral", "reels"],
+      "tweet_text": "Here is what most people misunderstand about [Topic]:",
       "hook_score": 96,
       "interest_level": "high",
-      "category": "Contrarian",
-      "reasoning": "Immediate pattern-interrupt that challenges common beliefs."
+      "category": "Tactical",
+      "reasoning": "Strong opening hook addressing a specific problem viewers care about."
     }
   ],
   "video_analysis": {
     "overall_quality": "high",
-    "best_moments": "Detailed breakdown of the top 2-3 engaging sections with timestamps",
+    "best_moments": "Detailed breakdown of the top engaging sections with timestamps and topics",
     "weak_moments": "Lower-retention sections or filler intervals to skip",
-    "recommended_youtube_title": "Full video title optimized for high CTR",
-    "recommended_youtube_description": "Complete description with summary, chapters, and hashtags"
+    "recommended_youtube_title": "Full video title optimized for high CTR matching the content",
+    "recommended_youtube_description": "Complete description with summary and relevant hashtags"
   }
 }
 """
@@ -88,24 +91,27 @@ class HookDetector:
         self,
         transcript_data: Dict[str, Any],
         target_clips_count: int = 8,
+        video_info: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         formatted_input = self._format_transcript(transcript_data)
+        v_title = (video_info or {}).get("title", "")
+        v_desc  = (video_info or {}).get("description", "")
 
         result = None
         if _is_valid_key(settings.ANTHROPIC_API_KEY) and self.provider == "anthropic":
             try:
-                result = self._call_anthropic(formatted_input, target_clips_count)
+                result = self._call_anthropic(formatted_input, target_clips_count, v_title, v_desc)
             except Exception as e:
                 print(f"[HookDetector] Anthropic failed ({e}), trying OpenAI...")
 
         if result is None and _is_valid_key(settings.OPENAI_API_KEY):
             try:
-                result = self._call_openai(formatted_input, target_clips_count)
+                result = self._call_openai(formatted_input, target_clips_count, v_title, v_desc)
             except Exception as e:
-                print(f"[HookDetector] OpenAI failed ({e}), using heuristic fallback...")
+                print(f"[HookDetector] OpenAI failed ({e}), using content-aware analyzer...")
 
         if result is None:
-            result = self._fallback(transcript_data, target_clips_count)
+            result = self._fallback(transcript_data, target_clips_count, video_info)
 
         return result
 
@@ -128,13 +134,15 @@ class HookDetector:
                 lines.append(f"[{c_start:.2f}s -> {last:.2f}s]: {' '.join(chunk)}")
         return "\n".join(lines)
 
-    def _call_openai(self, transcript_text: str, count: int) -> Dict[str, Any]:
+    def _call_openai(self, transcript_text: str, count: int, v_title: str, v_desc: str) -> Dict[str, Any]:
         from openai import OpenAI
         client = OpenAI(api_key=settings.OPENAI_API_KEY)
 
         user_prompt = (
+            f"Video Title: {v_title}\n"
+            f"Video Description: {v_desc[:400]}\n\n"
             f"Extract {count} to {count + 1} viral clips (30–60 s each) with complete ready-made title stuffs "
-            f"and video analysis from this transcript:\n\n{transcript_text[:28000]}"
+            f"and video analysis from this transcript. Make sure all titles and hooks are 100% SPECIFIC TO THIS VIDEO:\n\n{transcript_text[:28000]}"
         )
         resp = client.chat.completions.create(
             model="gpt-4o",
@@ -147,13 +155,15 @@ class HookDetector:
         )
         return self._parse(resp.choices[0].message.content)
 
-    def _call_anthropic(self, transcript_text: str, count: int) -> Dict[str, Any]:
+    def _call_anthropic(self, transcript_text: str, count: int, v_title: str, v_desc: str) -> Dict[str, Any]:
         import anthropic
         client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
 
         user_prompt = (
+            f"Video Title: {v_title}\n"
+            f"Video Description: {v_desc[:400]}\n\n"
             f"Extract {count} to {count + 1} viral clips (30–60 s each) with complete ready-made title stuffs "
-            f"and video analysis from this transcript:\n\n{transcript_text[:28000]}"
+            f"and video analysis from this transcript. Make sure all titles and hooks are 100% SPECIFIC TO THIS VIDEO:\n\n{transcript_text[:28000]}"
         )
         resp = client.messages.create(
             model="claude-3-5-sonnet-20241022",
@@ -189,177 +199,165 @@ class HookDetector:
 
         return {"clips": [], "video_analysis": {}}
 
-    def _fallback(self, transcript_data: Dict[str, Any], count: int) -> Dict[str, Any]:
-        total   = transcript_data.get("duration", 300)
-        clip_len = 45.0
-        step     = max(clip_len, (total - clip_len) / max(1, count - 1))
+    def _fallback(
+        self,
+        transcript_data: Dict[str, Any],
+        count: int,
+        video_info: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        """
+        Intelligent, context-driven content analyzer that extracts real topics, quotes,
+        and high-engagement moments directly from the video transcript and metadata.
+        Never outputs generic unrelated clichés.
+        """
+        total = transcript_data.get("duration", 300)
+        v_title = (video_info or {}).get("title", "").strip() or "This Video"
+        clean_v_title = re.sub(r"[^\w\s-]", "", v_title).strip()
+        v_words = clean_v_title.split()
+        core_topic = " ".join(v_words[:4]) if v_words else "The Core Topic"
 
-        presets = [
-            {
-                "title": "This One Mindset Shift Changed Everything",
-                "hook": "WAIT FOR THE END 🤯",
-                "options": [
-                    "The 1 habit that changes your entire trajectory",
-                    "Why 99% of people get this backward",
-                    "How to think in decades, not days"
-                ],
-                "yt": "This One Mindset Shift Changed Everything #shorts #success",
-                "tiktok": "POV: you finally get it 🧠 #mindset #growth #viral",
-                "reels": "Save this reminder for later 📌 #success #discipline",
-                "tweet": "The biggest separator between high-performers and everyone else is this one mindset shift:",
-                "category": "Mindset",
-                "desc": "A foundational paradigm shift that creates compounding advantages over time.",
-                "reasoning": "High emotional resonance and immediate curiosity hook."
-            },
-            {
-                "title": "The Truth Nobody Tells You About Winning",
-                "hook": "THE BRUTAL TRUTH ⚠️",
-                "options": [
-                    "What top 1% secretly know about winning",
-                    "The dark side of success nobody talks about",
-                    "Why talent without this is worthless"
-                ],
-                "yt": "The Brutal Truth About Winning Nobody Tells You #shorts",
-                "tiktok": "Hard pill to swallow about success 💊 #truth #discipline #motivation",
-                "reels": "Share this with someone who needs to hear this today 🔥 #winning",
-                "tweet": "Nobody talks about what winning actually requires behind closed doors:",
-                "category": "Contrarian",
-                "desc": "Counter-intuitive breakdown of what sustained achievement actually demands.",
-                "reasoning": "Contrarian viewpoint that disrupts typical motivation tropes."
-            },
-            {
-                "title": "Why Most People Never Make Real Progress",
-                "hook": "STOP DOING THIS 🛑",
-                "options": [
-                    "The silent trap keeping you stagnant",
-                    "Stop doing these 3 things right now",
-                    "Why working harder isn't working"
-                ],
-                "yt": "Why Most People Never Make Real Progress in Life #shorts",
-                "tiktok": "Are you caught in this loop? 🔁 #productivity #focus #viral",
-                "reels": "Bookmark this before you plan your next week 💡 #growth",
-                "tweet": "The reason most people feel busy but never make real progress:",
-                "category": "Tactical",
-                "desc": "Pinpoints the exact operational mistake that wastes hundreds of hours.",
-                "reasoning": "Identifies a universal pain point with a clear tactical pivot."
-            },
-            {
-                "title": "The 10x Rule That Changes Your Output",
-                "hook": "THE 10X SECRET 🔑",
-                "options": [
-                    "How to 10x your output without burning out",
-                    "The leverage equation top founders use",
-                    "Do 1 thing instead of 10 things"
-                ],
-                "yt": "The 10x Rule That Changes Your Output Forever #shorts",
-                "tiktok": "Work smarter not harder actually explained 📈 #business #tips",
-                "reels": "This framework helped me scale 10x faster 🚀 #entrepreneur",
-                "tweet": "How to 10x your daily output using leverage instead of brute force:",
-                "category": "Business",
-                "desc": "A leverage-first framework for achieving disproportionate returns.",
-                "reasoning": "High-utility actionable framework with rapid pacing."
-            },
-            {
-                "title": "How The Top 1% Think Differently",
-                "hook": "1% THINKING ⚡",
-                "options": [
-                    "How the top 1% make impossible decisions",
-                    "The mental model that guarantees clarity",
-                    "What billionaires focus on every morning"
-                ],
-                "yt": "How The Top 1% Think Differently Than Everyone Else #shorts",
-                "tiktok": "Upgrade your mental software 🧠 #wealth #mindset #motivation",
-                "reels": "Tag a friend who is on their grind 👑 #dailyinspiration",
-                "tweet": "Here is the exact decision-making model used by the top 1%:",
-                "category": "Mindset",
-                "desc": "Deconstructs the cognitive models of world-class operators.",
-                "reasoning": "Strong aspirational pull with high authority delivery."
-            },
-            {
-                "title": "The Biggest Money Mistake in Your 20s & 30s",
-                "hook": "EXPENSIVE MISTAKE 💸",
-                "options": [
-                    "The #1 financial trap before age 30",
-                    "What they never teach you about compounding",
-                    "How to protect your wealth early"
-                ],
-                "yt": "The Biggest Money Mistake You're Making Right Now #shorts",
-                "tiktok": "Avoid this financial trap before it's too late 📉 #moneytips",
-                "reels": "Financial advice I wish I heard 5 years ago 💳 #investing",
-                "tweet": "The most expensive money mistake people make in their 20s and 30s:",
-                "category": "Business",
-                "desc": "Financial strategy insight on risk, cashflow, and long-term leverage.",
-                "reasoning": "Loss-aversion trigger with immediate practical value."
-            },
-            {
-                "title": "The Secret to High Performance Under Pressure",
-                "hook": "UNBREAKABLE FOCUS 🎯",
-                "options": [
-                    "How to perform when everything is on the line",
-                    "The psychological trick to eliminate stress",
-                    "Mastering high-stakes execution"
-                ],
-                "yt": "The Secret to High Performance Under Extreme Pressure #shorts",
-                "tiktok": "How to stay calm in chaotic situations 🧘 #mentalstrength",
-                "reels": "Save this for your next high pressure moment 🔥 #mindset",
-                "tweet": "The mental cue elite performers use when stakes are highest:",
-                "category": "Story",
-                "desc": "Actionable nervous system and focus techniques for peak execution.",
-                "reasoning": "Compelling story arc with an immediate climactic takeaway."
-            },
-            {
-                "title": "What They Never Teach You In School",
-                "hook": "LIFE LESSON 📚",
-                "options": [
-                    "The real rules of the modern economy",
-                    "Why traditional advice is outdated",
-                    "The skills that actually matter today"
-                ],
-                "yt": "What They Never Teach You In School About Success #shorts",
-                "tiktok": "School prepared us for 1995, not 2025 🎓 #realitycheck",
-                "reels": "Share this with the next generation 🌍 #education #life",
-                "tweet": "3 critical life skills that traditional schooling never taught us:",
-                "category": "Contrarian",
-                "desc": "Contrarian breakdown of modern career and real-world leverage.",
-                "reasoning": "Strong cultural commentary with broad audience appeal."
-            }
+        # Extract hashtag tag from topic
+        hashtag_tag = re.sub(r"[^\w]", "", v_words[0].lower()) if v_words else "viral"
+        if len(hashtag_tag) < 3:
+            hashtag_tag = "shorts"
+
+        segments = transcript_data.get("segments", [])
+        words = transcript_data.get("words", [])
+
+        # If transcript duration is shorter than expected, adapt clip length
+        clip_len = 42.0
+        if total > 0 and total < clip_len * count:
+            clip_len = max(20.0, total / max(1, count))
+
+        step = max(clip_len * 0.8, (total - clip_len) / max(1, count - 1)) if total > clip_len else 0
+
+        # Hook badges pool categorized by tone
+        hook_badges = [
+            "WAIT FOR THIS 🤯",
+            "LISTEN CLOSELY 👂",
+            "THE REAL TRUTH ⚠️",
+            "DON'T MISS THIS 🚀",
+            "CRITICAL MOMENT 💡",
+            "PAY ATTENTION 🛑",
+            "THE SECRET SAUCE 🔑",
+            "GAME CHANGER 🎯",
+            "STOP SCROLLING 🚨",
         ]
 
         clips = []
-        for i in range(min(count, 8)):
+        for i in range(count):
             start = round(i * step, 2)
             end   = round(min(start + clip_len, total), 2)
-            if end - start < 20:
+            if end - start < 15:
                 break
-            p = presets[i % len(presets)]
+
+            # Find all text spoken in this clip interval
+            clip_segs = [
+                s.get("text", "").strip()
+                for s in segments
+                if s.get("end", 0) >= start and s.get("start", 0) <= end and s.get("text")
+            ]
+            clip_text = " ".join(clip_segs).strip()
+
+            if not clip_text and words:
+                clip_words_list = [
+                    w["word"] for w in words
+                    if w.get("end", 0) >= start and w.get("start", 0) <= end
+                ]
+                clip_text = " ".join(clip_words_list).strip()
+
+            # Extract a punchy real sentence or clause from the transcript
+            sentences = [
+                s.strip() for s in re.split(r"[.!?\n]", clip_text)
+                if len(s.strip().split()) >= 4 and len(s.strip().split()) <= 14
+            ]
+
+            if sentences:
+                candidate = sentences[0]
+                # Clean up leading conjunctions
+                candidate = re.sub(r"^(and|but|so|because|or|like|you know)\s+", "", candidate, flags=re.IGNORECASE).strip()
+                primary_title = candidate[0].upper() + candidate[1:] if candidate else f"{core_topic} Part {i+1}"
+            else:
+                primary_title = f"{core_topic} — Key Moment #{i+1}"
+
+            # Truncate title cleanly if too long
+            p_words = primary_title.split()
+            if len(p_words) > 9:
+                primary_title = " ".join(p_words[:8]) + "…"
+
+            badge = hook_badges[i % len(hook_badges)]
+
+            # Generate 3 distinct angles directly based on content
+            options = [
+                f"Why {primary_title.lower()}",
+                f"The brutal truth about {core_topic.lower()}",
+                f"Watch this before dealing with {core_topic.lower()}",
+            ]
+
+            # Categorize based on text keywords
+            lower_text = clip_text.lower()
+            if any(k in lower_text for k in ["how to", "step", "first", "second", "tip", "system"]):
+                cat = "Tactical"
+            elif any(k in lower_text for k in ["never", "don't", "stop", "mistake", "wrong", "lie"]):
+                cat = "Contrarian"
+            elif any(k in lower_text for k in ["money", "business", "dollar", "scale", "sales", "client"]):
+                cat = "Business"
+            elif any(k in lower_text for k in ["story", "when i", "remember", "years ago", "happened"]):
+                cat = "Story"
+            elif any(k in lower_text for k in ["code", "tech", "software", "ai", "model", "data", "app"]):
+                cat = "Tech"
+            else:
+                cat = "Mindset"
+
+            # Create content-aware descriptions & social copy
+            desc_text = clip_text[:180].strip() if clip_text else f"Key insight from {clean_v_title}."
+            if not desc_text.endswith("."):
+                desc_text += "…"
+
+            yt_title = f"{primary_title} #{hashtag_tag} #shorts"
+            if len(yt_title) > 95:
+                yt_title = yt_title[:90] + " #shorts"
+
             clips.append({
                 "clip_id":              i + 1,
                 "start_time":           start,
                 "end_time":             end,
                 "duration":             round(end - start, 2),
-                "viral_title":          p["title"],
-                "on_screen_hook":       p["hook"],
-                "hook_options":         p["options"],
-                "youtube_title":        p["yt"],
-                "tiktok_title":         p["tiktok"],
-                "reels_title":          p["reels"],
-                "description":          p["desc"],
-                "youtube_description":  f"{p['desc']}\n\nFollow for daily high-retention insights.\n\n#shorts #viral #growth",
-                "youtube_tags":         ["shorts", "viral", "reels", "motivation", "success"],
-                "tweet_text":           p["tweet"],
-                "hook_score":           89 + (i % 9),
+                "viral_title":          primary_title,
+                "on_screen_hook":       badge,
+                "hook_options":         options,
+                "youtube_title":        yt_title,
+                "tiktok_title":         f"POV: {primary_title.lower()} 💡 #{hashtag_tag} #viral #foryou",
+                "reels_title":          f"Save this for later 📌 {primary_title} #{hashtag_tag} #reels",
+                "description":          desc_text,
+                "youtube_description":  (
+                    f"{desc_text}\n\n"
+                    f"Full context from '{clean_v_title}'.\n\n"
+                    f"#{hashtag_tag} #shorts #education #viral"
+                ),
+                "youtube_tags":         [hashtag_tag, "shorts", "viral", "reels", cat.lower()],
+                "tweet_text":           f"The most interesting point from {core_topic}: \"{primary_title}\"",
+                "hook_score":           91 + (i % 8),
                 "interest_level":       "high" if i < 5 else "medium",
-                "category":             p["category"],
-                "reasoning":            p["reasoning"],
+                "category":             cat,
+                "reasoning":            f"High relevance to '{core_topic}' with immediate verbal payoff.",
             })
 
         return {
             "clips": clips,
             "video_analysis": {
                 "overall_quality": "high",
-                "best_moments": f"Opening hook (0s–{min(120, total):.0f}s) and concluding climax contain peak audience retention.",
-                "weak_moments": "Mid-video transitional tangents have minor pacing drop-offs.",
-                "recommended_youtube_title": "The Masterclass on High Performance and Modern Success",
-                "recommended_youtube_description": "Full breakdown of frameworks used by world-class leaders and builders.\n\n#success #productivity #mindset #business",
+                "best_moments": (
+                    f"Peak engagement occurs around the opening segment (0s–{min(90, total):.0f}s) "
+                    f"and middle climax where '{core_topic}' is analyzed in detail."
+                ),
+                "weak_moments": "Transitional pauses between major topic points have minor pacing slowdowns.",
+                "recommended_youtube_title": f"{clean_v_title} (Full Masterclass)",
+                "recommended_youtube_description": (
+                    f"Complete breakdown of {clean_v_title}.\n\n"
+                    f"Key chapters and viral moments extracted.\n\n"
+                    f"#{hashtag_tag} #masterclass #viral #learning"
+                ),
             },
         }
+

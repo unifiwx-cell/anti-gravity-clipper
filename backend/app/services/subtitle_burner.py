@@ -150,7 +150,7 @@ class SubtitleBurner:
             shadow_sz        = "4"
             uppercase        = True
 
-        # Header with styles: Default for captions, HeaderStyle for top hook title
+        # Header with styles: Default for captions (base unspoken color), HookBadge for top hook title
         header = (
             f"[Script Info]\n"
             f"ScriptType: v4.00+\n"
@@ -159,7 +159,7 @@ class SubtitleBurner:
             f"ScaledBorderAndShadow: yes\n\n"
             f"[V4+ Styles]\n"
             f"Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding\n"
-            f"Style: Default,{font_name},{font_size},{primary_color},{secondary_color},{outline_color},{back_color},{bold},0,0,0,100,100,2,0,1,{outline_sz},{shadow_sz},5,20,20,20,1\n"
+            f"Style: Default,{font_name},{font_size},{secondary_color},{primary_color},{outline_color},{back_color},{bold},0,0,0,100,100,2,0,1,{outline_sz},{shadow_sz},5,20,20,20,1\n"
             f"Style: HookBadge,Impact,{int(font_size * 0.75)},&H00FFFFFF&,&H00FFFFFF&,&H00000000&,&HAA000000&,-1,0,0,0,100,100,2,0,1,5,3,5,20,20,20,1\n\n"
             f"[Events]\n"
             f"Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n"
@@ -173,13 +173,12 @@ class SubtitleBurner:
             clip_dur = max(1.0, clip_end - clip_start)
             h_start = self._ass_ts(0.0)
             h_end   = self._ass_ts(clip_dur)
-            # Banner positioned at top third (Y ~ 240px)
             hook_pos = f"{{\\pos({int(canvas_width / 2)},240)}}"
             events.append(
                 f"Dialogue: 1,{h_start},{h_end},HookBadge,,0,0,0,,{hook_pos}{{\\b1}}{clean_hook}"
             )
 
-        # Build karaoke events for words
+        # Build precision word-to-word popup highlight events
         effective_chunk = max(1, min(chunk_size, 6))
         pos_tag = f"{{\\pos({pos_x},{pos_y})}}"
 
@@ -188,24 +187,34 @@ class SubtitleBurner:
             if not chunk:
                 continue
 
-            t0 = chunk[0]["start"]
-            t1 = chunk[-1]["end"]
-            if t1 <= t0:
-                t1 = t0 + max(0.4, sum(max(0.05, w["end"] - w["start"]) for w in chunk))
+            for w_idx, active_w in enumerate(chunk):
+                w_start = active_w["start"]
 
-            line_start = self._ass_ts(t0)
-            line_end   = self._ass_ts(t1)
+                # Active word ends either when next word in chunk begins or when active word ends
+                if w_idx + 1 < len(chunk):
+                    w_end = max(w_start + 0.08, chunk[w_idx + 1]["start"])
+                else:
+                    w_end = max(w_start + 0.12, active_w["end"])
 
-            tokens: List[str] = []
-            for w in chunk:
-                dur_cs = max(5, int(round(max(0.05, w["end"] - w["start"]) * 100)))
-                text   = w["word"].upper() if uppercase else w["word"]
-                tokens.append(f"{{\\kf{dur_cs}}}{text}")
+                t_start_str = self._ass_ts(w_start)
+                t_end_str   = self._ass_ts(w_end)
 
-            phrase = " ".join(tokens)
-            events.append(
-                f"Dialogue: 0,{line_start},{line_end},Default,,0,0,0,,{pos_tag}{phrase}"
-            )
+                # Format chunk: non-active words are base color, active word is popped & highlighted
+                words_fmt = []
+                for j, w in enumerate(chunk):
+                    word_str = w["word"].upper() if uppercase else w["word"]
+                    if j == w_idx:
+                        # Highlighted active word with popup scale
+                        words_fmt.append(
+                            f"{{\\c{primary_color}\\fscx112\\fscy112}}{word_str}{{\\c{secondary_color}\\fscx100\\fscy100}}"
+                        )
+                    else:
+                        words_fmt.append(word_str)
+
+                phrase = " ".join(words_fmt)
+                events.append(
+                    f"Dialogue: 0,{t_start_str},{t_end_str},Default,,0,0,0,,{pos_tag}{phrase}"
+                )
 
         with open(output_ass_path, "w", encoding="utf-8") as f:
             f.write(header + "\n".join(events) + "\n")

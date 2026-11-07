@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title:       "Cliphi.ai — AI Video Repurposing & Viral Shorts Studio",
+  title:       "Cliperg — AI Video Repurposing & Viral Shorts Studio",
   description: "Turn any YouTube video into 8–9 viral 9:16 shorts with AI hook detection, smart face-tracking cropping, ready-made title stuffs, and CapCut-style word-highlighted captions.",
-  keywords:    "cliphi, viral clips, AI video editor, capcut captions, reels generator, youtube shorts generator",
+  keywords:    "cliperg, viral clips, AI video editor, capcut captions, reels generator, youtube shorts generator",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -25,8 +25,8 @@ class YouTubeDownloader:
     def get_instant_subtitles(self, url: str) -> dict:
         """
         Pull YouTube's word-level JSON3 subtitle stream.
+        Extracts microsecond-precise start and end times for every single spoken word.
         Takes ~1-2 seconds for any video length — no audio download needed.
-        Falls back gracefully if the video has no auto-captions.
         """
         import json
         import urllib.request
@@ -63,40 +63,71 @@ class YouTubeDownloader:
                 req  = urllib.request.urlopen(target_sub["url"], timeout=15)
                 data = json.loads(req.read().decode("utf-8"))
 
+                raw_events = data.get("events", [])
                 words, segments, full_text = [], [], []
 
-                for event in data.get("events", []):
+                for event in raw_events:
                     ev_start = event.get("tStartMs", 0) / 1000.0
-                    ev_dur   = event.get("dDurationMs", 500) / 1000.0
+                    ev_dur   = max(0.2, event.get("dDurationMs", 500) / 1000.0)
                     ev_end   = round(ev_start + ev_dur, 3)
 
                     segs = event.get("segs", [])
-                    seg_words = []
+                    if not segs:
+                        continue
 
-                    for i, s in enumerate(segs):
-                        w_text = s.get("utf8", "").replace("\u200b", "").strip()
-                        if not w_text or w_text in ("\n", " "):
+                    # Parse all segments and handle both word-by-word and line-grouped events
+                    event_tokens = []
+                    for s in segs:
+                        text = s.get("utf8", "").replace("\u200b", "").replace("\n", " ").strip()
+                        if not text:
                             continue
+                        offset = s.get("tOffsetMs", 0) / 1000.0
+                        sub_words = text.split()
+                        if not sub_words:
+                            continue
+                        event_tokens.append({
+                            "words": sub_words,
+                            "offset": max(0.0, offset),
+                        })
 
-                        w_offset = s.get("tOffsetMs", 0) / 1000.0
-                        w_start  = round(ev_start + w_offset, 3)
+                    if not event_tokens:
+                        continue
 
-                        # Word end = next word's start OR event end — whichever is sooner
-                        if i + 1 < len(segs):
-                            next_offset = segs[i + 1].get("tOffsetMs", 0) / 1000.0
-                            w_end = round(ev_start + next_offset, 3)
+                    ev_words_flat = []
+                    for tok_idx, tok in enumerate(event_tokens):
+                        sub_words = tok["words"]
+                        tok_start = ev_start + tok["offset"]
+
+                        if tok_idx + 1 < len(event_tokens):
+                            next_tok_start = ev_start + event_tokens[tok_idx + 1]["offset"]
                         else:
-                            w_end = ev_end
+                            next_tok_start = ev_end
 
-                        w_end = max(w_start + 0.05, min(w_end, ev_end))
+                        tok_duration = max(0.12 * len(sub_words), next_tok_start - tok_start)
+                        total_chars  = sum(len(w) for w in sub_words) or 1
 
-                        words.append({"word": w_text, "start": w_start, "end": w_end})
-                        seg_words.append(w_text)
+                        curr_w_start = tok_start
+                        for w_i, word in enumerate(sub_words):
+                            w_fraction = len(word) / total_chars
+                            w_dur = max(0.08, tok_duration * w_fraction)
+                            if w_i + 1 < len(sub_words):
+                                w_end = curr_w_start + w_dur
+                            else:
+                                w_end = max(curr_w_start + 0.1, min(tok_start + tok_duration, ev_end))
 
-                    if seg_words:
-                        joined = " ".join(seg_words)
-                        full_text.append(joined)
-                        segments.append({"start": ev_start, "end": ev_end, "text": joined})
+                            ev_words_flat.append({
+                                "word":  word,
+                                "start": round(curr_w_start, 3),
+                                "end":   round(max(curr_w_start + 0.08, w_end), 3),
+                            })
+                            curr_w_start = w_end
+
+                    for w in ev_words_flat:
+                        words.append(w)
+
+                    joined = " ".join(w["word"] for w in ev_words_flat)
+                    full_text.append(joined)
+                    segments.append({"start": ev_start, "end": ev_end, "text": joined})
 
                 return {
                     "text":     " ".join(full_text),

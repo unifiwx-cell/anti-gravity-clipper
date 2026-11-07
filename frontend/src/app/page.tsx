@@ -31,7 +31,7 @@ function stageIndex(progress: number) {
   return 0;
 }
 
-// ── Cliphi Video Intelligence & Analysis Panel ───────────────────────────────
+// ── Cliperg Video Intelligence & Analysis Panel ───────────────────────────────
 const VideoAnalysisPanel: React.FC<{ analysis: VideoAnalysis; sessionId: string }> = ({
   analysis, sessionId,
 }) => {
@@ -52,7 +52,7 @@ const VideoAnalysisPanel: React.FC<{ analysis: VideoAnalysis; sessionId: string 
             <BarChart3 className="w-4 h-4 text-purple-400" />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-white tracking-wide">Cliphi Video Intelligence</h3>
+            <h3 className="text-sm font-bold text-white tracking-wide">Cliperg Video Intelligence</h3>
             <p className="text-[11px] text-neutral-400">Contextual retention analysis &amp; YouTube SEO strategy</p>
           </div>
         </div>
@@ -145,12 +145,13 @@ export default function Home() {
   // Restore active session from localStorage on reload
   useEffect(() => {
     refreshProjects();
-    const saved = localStorage.getItem("cliphi_current_session");
+    const saved = localStorage.getItem("cliperg_current_session") || localStorage.getItem("cliphi_current_session");
     if (saved) {
       setSessionId(saved);
       axios.get(`${API}/api/status/${saved}`).then((res) => {
         setStatus(res.data);
       }).catch(() => {
+        localStorage.removeItem("cliperg_current_session");
         localStorage.removeItem("cliphi_current_session");
       });
     }
@@ -158,7 +159,7 @@ export default function Home() {
 
   useEffect(() => {
     if (sessionId) {
-      localStorage.setItem("cliphi_current_session", sessionId);
+      localStorage.setItem("cliperg_current_session", sessionId);
     }
   }, [sessionId]);
 
@@ -210,6 +211,7 @@ export default function Home() {
         setSessionId(null);
         setStatus(null);
         setSelectedClip(null);
+        localStorage.removeItem("cliperg_current_session");
         localStorage.removeItem("cliphi_current_session");
       }
       refreshProjects();
@@ -221,6 +223,7 @@ export default function Home() {
     setStatus(null);
     setSelectedClip(null);
     setViewMode("clipper");
+    localStorage.removeItem("cliperg_current_session");
     localStorage.removeItem("cliphi_current_session");
   };
 
@@ -247,13 +250,13 @@ export default function Home() {
 
   return (
     <main className="min-h-screen" style={{ background: "#090a10" }}>
-      {/* Cliphi Ambient Radiant Background */}
+      {/* Cliperg Ambient Radiant Background */}
       <div className="orb-purple" />
       <div className="orb-indigo" />
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-28">
 
-        {/* ── CLIPHI TOP NAVIGATION BAR ─────────────────────────────────── */}
+        {/* ── CLIPERG TOP NAVIGATION BAR ─────────────────────────────────── */}
         <nav className="flex items-center justify-between py-5 border-b border-white/10 mb-8 flex-wrap gap-4">
           {/* Brand Logo */}
           <div className="flex items-center gap-3 cursor-pointer" onClick={startNewProject}>
@@ -263,7 +266,7 @@ export default function Home() {
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-xl font-black tracking-tight text-white font-sans">
-                  CLIPHI<span className="text-purple-400">.AI</span>
+                  CLIP<span className="text-purple-400">ERG</span>
                 </span>
                 <span className="px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 text-[10px] font-bold border border-purple-500/30">
                   STUDIO
@@ -271,8 +274,7 @@ export default function Home() {
               </div>
               <p className="text-[10px] text-neutral-500 tracking-wider uppercase font-semibold">
                 AI Short-Form Video Repurposing
-              </p>
-            </div>
+              </p>            </div>
           </div>
 
           {/* Navigation Tabs */}
@@ -331,7 +333,7 @@ export default function Home() {
           </div>
         </nav>
 
-        {/* ── VIEW 1: PAST PROJECTS DASHBOARD (EXACT CLIPHI DASHBOARD) ───── */}
+        {/* ── VIEW 1: PAST PROJECTS DASHBOARD (EXACT CLIPERG DASHBOARD) ───── */}
         {viewMode === "projects" && (
           <div className="space-y-6 fade-up">
             {/* Header with Stats */}
@@ -456,13 +458,13 @@ export default function Home() {
           </div>
         )}
 
-        {/* ── VIEW 2: CAPTION STYLES SHOWCASE (CLIPHI PRESETS) ───────────── */}
+        {/* ── VIEW 2: CAPTION STYLES SHOWCASE (CLIPERG PRESETS) ───────────── */}
         {viewMode === "styles" && (
           <div className="space-y-6 fade-up">
             <div className="glass p-6 rounded-2xl border-purple-500/20">
               <h2 className="text-xl font-black text-white flex items-center gap-2 mb-1">
                 <Type className="w-5 h-5 text-purple-400" />
-                <span>Cliphi Caption Typography Presets</span>
+                <span>Cliperg Caption Typography Presets</span>
               </h2>
               <p className="text-xs text-neutral-400">
                 Modeled after top creators (Alex Hormozi, MrBeast, Ali Abdaal) with real-time speech karaoke highlights.
@@ -540,7 +542,7 @@ export default function Home() {
           </div>
         )}
 
-        {/* ── VIEW 3: CLIPHI AUTO CLIPPER (PRIMARY WORKFLOW) ─────────────── */}
+        {/* ── VIEW 3: CLIPERG AUTO CLIPPER (PRIMARY WORKFLOW) ─────────────── */}
         {viewMode === "clipper" && (
           <div>
             {/* Hero Section (When no active clips) */}
@@ -548,7 +550,7 @@ export default function Home() {
               <section className="text-center max-w-3xl mx-auto mb-12 fade-up">
                 <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-purple-950/40 border border-purple-800/40 text-purple-300 text-xs font-semibold mb-6 shadow-lg shadow-purple-600/10">
                   <Wand2 className="w-3.5 h-3.5 text-purple-400" />
-                  Cliphi Engine · 1 Long Video ➔ 8 to 9 Viral Reels
+                  Cliperg Engine · 1 Long Video ➔ 8 to 9 Viral Reels
                 </div>
 
                 <h2 className="text-5xl sm:text-6xl font-black tracking-tight text-white mb-5 leading-[1.05]">
@@ -560,12 +562,12 @@ export default function Home() {
                   AI scans audio context for viral hooks, tracks speakers in vertical 9:16, generates ready-made titles, and burns CapCut word-highlight captions.
                 </p>
 
-                {/* Cliphi Feature Bar */}
+                {/* Cliperg Feature Bar */}
                 <div className="mt-8 grid grid-cols-2 sm:grid-cols-4 gap-3 text-left">
                   {[
                     { icon: "⚡", t: "Instant Subtitles", d: "Zero wait transcript stream" },
                     { icon: "🎯", t: "Speaker Centering", d: "YuNet face tracking 9:16" },
-                    { icon: "✍️", t: "Cliphi Text Styles", d: "Hormozi, Beast, Neon, Red" },
+                    { icon: "✍️", t: "Cliperg Text Styles", d: "Hormozi, Beast, Neon, Red" },
                     { icon: "🔥", t: "Ready-Made Titles", d: "YouTube, TikTok, Reels copy" },
                   ].map((f) => (
                     <div key={f.t} className="glass p-3.5 rounded-xl border-white/10">
@@ -658,7 +660,7 @@ export default function Home() {
               </div>
             )}
 
-            {/* ── Viral Shorts Grid (Cliphi Style Grid) ───────────────────── */}
+            {/* ── Viral Shorts Grid (Cliperg Style Grid) ───────────────────── */}
             {isDone && status.clips?.length > 0 && !selectedClip && (
               <section className="space-y-8 fade-up">
                 {/* Full Video Intelligence & SEO */}
@@ -746,7 +748,7 @@ export default function Home() {
 
                 {/* Bottom Footer */}
                 <div className="text-center text-xs text-neutral-600 pt-6">
-                  Cliphi Engine · 9:16 Vertical Cropping · Face Centering · Precision Karaoke Highlights
+                  Cliperg Engine · 9:16 Vertical Cropping · Face Centering · Precision Karaoke Highlights
                 </div>
               </section>
             )}

@@ -29,7 +29,7 @@ interface StylePreset {
   defaultHex:  string;
 }
 
-const CLIPHI_STYLES: StylePreset[] = [
+const CLIPERG_STYLES: StylePreset[] = [
   {
     id: "hormozi",
     name: "Hormozi Classic",
@@ -145,24 +145,71 @@ export const CaptionEditor: React.FC<CaptionEditorProps> = ({
     else          { videoRef.current.play();  setPlaying(true);  }
   };
 
-  // Active word calculations for preview
+  // 60FPS Video time synchronization for millisecond-accurate word popup
+  useEffect(() => {
+    let animId: number;
+    const tick = () => {
+      if (videoRef.current && !videoRef.current.paused) {
+        setCurrentTime(videoRef.current.currentTime);
+      }
+      animId = requestAnimationFrame(tick);
+    };
+    if (playing) {
+      animId = requestAnimationFrame(tick);
+    }
+    return () => {
+      if (animId) cancelAnimationFrame(animId);
+    };
+  }, [playing]);
+
+  // Precision word calculations for preview matching CapCut/Cliperg audio sync
   const words: WordTimestamp[] = clip.words || [];
-  const activeIdx = words.findIndex((w) => currentTime >= w.start && currentTime <= w.end);
 
   const getDisplayWords = () => {
     if (words.length === 0) {
-      return [{ word: "CLIPHI", isActive: true }, { word: "CAPTIONS", isActive: false }];
+      return [{ word: "CLIPERG", isActive: true }, { word: "CAPTIONS", isActive: false }];
     }
-    const base  = activeIdx !== -1 ? activeIdx : words.findIndex((w) => currentTime < w.start);
-    const pivot = base !== -1 ? Math.max(0, base - 1) : 0;
-    const end   = Math.min(words.length, pivot + chunkSize);
-    return words.slice(pivot, end).map((w, i) => ({
-      word:     w.word,
-      isActive: pivot + i === activeIdx,
+
+    // Find the word that is currently active or most recently spoken
+    let currentIdx = -1;
+    for (let i = 0; i < words.length; i++) {
+      const w = words[i];
+      const nextStart = i + 1 < words.length ? words[i + 1].start : w.end + 0.3;
+      if (currentTime >= w.start && currentTime < Math.max(w.end, nextStart)) {
+        if (currentTime > w.end + 0.7) {
+          currentIdx = -1;
+        } else {
+          currentIdx = i;
+        }
+        break;
+      }
+    }
+
+    if (currentIdx === -1) {
+      const firstUpcoming = words.findIndex((w) => w.start > currentTime);
+      if (firstUpcoming !== -1 && words[firstUpcoming].start - currentTime < 0.25) {
+        const chunkStart = Math.floor(firstUpcoming / chunkSize) * chunkSize;
+        const chunk = words.slice(chunkStart, chunkStart + chunkSize);
+        return chunk.map((w) => ({
+          word: w.word,
+          isActive: false,
+        }));
+      }
+      return [];
+    }
+
+    // Stable chunk based on chunkSize
+    const chunkStart = Math.floor(currentIdx / chunkSize) * chunkSize;
+    const chunkEnd   = Math.min(words.length, chunkStart + chunkSize);
+    const chunk      = words.slice(chunkStart, chunkEnd);
+
+    return chunk.map((w, idx) => ({
+      word: w.word,
+      isActive: chunkStart + idx === currentIdx,
     }));
   };
 
-  const currentPreset = CLIPHI_STYLES.find((s) => s.id === style) || CLIPHI_STYLES[0];
+  const currentPreset = CLIPERG_STYLES.find((s) => s.id === style) || CLIPERG_STYLES[0];
 
   const handleDragStop = (_: any, d: { x: number; y: number }) => {
     if (!containerRef.current) return;
@@ -198,7 +245,7 @@ export const CaptionEditor: React.FC<CaptionEditorProps> = ({
       // Auto trigger download
       const a = document.createElement("a");
       a.href = url;
-      a.download = `cliphi_${clip.clip_id}_rendered.mp4`;
+      a.download = `cliperg_${clip.clip_id}_rendered.mp4`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -218,7 +265,7 @@ export const CaptionEditor: React.FC<CaptionEditorProps> = ({
 
   return (
     <div className="glass fade-up shadow-2xl max-w-6xl w-full mx-auto overflow-hidden border-purple-500/25">
-      {/* ── Cliphi Studio Header ────────────────────────────────────────── */}
+      {/* ── Cliperg Studio Header ────────────────────────────────────────── */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-black/40">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-purple-600 via-indigo-600 to-pink-500 flex items-center justify-center shadow-lg shadow-purple-600/30">
@@ -226,7 +273,7 @@ export const CaptionEditor: React.FC<CaptionEditorProps> = ({
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="text-sm font-bold text-white tracking-wide">Cliphi Studio</h3>
+              <h3 className="text-sm font-bold text-white tracking-wide">Cliperg Studio</h3>
               <span className="badge badge-purple text-[10px]">1080p 9:16</span>
               <span className="badge badge-amber text-[10px]">{clip.hook_score}% Viral</span>
             </div>
@@ -337,7 +384,7 @@ export const CaptionEditor: React.FC<CaptionEditorProps> = ({
           </p>
         </div>
 
-        {/* ── Cliphi Quick Edit Rail (Right Side) ─────────────────────────── */}
+        {/* ── Cliperg Quick Edit Rail (Right Side) ─────────────────────────── */}
         <div className="lg:col-span-7 p-6 flex flex-col justify-between space-y-6">
           <div>
             {/* Rail Tabs */}
@@ -366,18 +413,18 @@ export const CaptionEditor: React.FC<CaptionEditorProps> = ({
               })}
             </div>
 
-            {/* ── TAB 1: CLIPHI TEXT STYLES ───────────────────────────────── */}
+            {/* ── TAB 1: CLIPERG TEXT STYLES ───────────────────────────────── */}
             {activeTab === "styles" && (
               <div className="space-y-4 fade-up">
                 <div className="flex items-center justify-between">
                   <p className="text-xs font-bold text-neutral-300 uppercase tracking-wider">
-                    Select Caption Aesthetic ({CLIPHI_STYLES.length} Viral Presets)
+                    Select Caption Aesthetic ({CLIPERG_STYLES.length} Viral Presets)
                   </p>
                   <span className="text-[11px] text-purple-400 font-semibold">Karaoke Word-Sync</span>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {CLIPHI_STYLES.map((preset) => {
+                  {CLIPERG_STYLES.map((preset) => {
                     const isSelected = style === preset.id;
                     return (
                       <div
